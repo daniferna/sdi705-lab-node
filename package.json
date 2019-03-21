@@ -3,6 +3,7 @@
   "description": "Tienda de musica",
   "version": "1.0.0",
   "dependencies": {
+    "body-parser": "^1.18.3",
     "express": "^4.16.4"
   }
 }
