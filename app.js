@@ -10,6 +10,8 @@ var app = express();
 var bodyParser = require('body-parser');
 var swig = require('swig');
 var mongo = require('mongodb');
+var gestorBD = require("./modules/gestorBD.js");
+gestorBD.init(app,mongo);
 
 
 app.use(bodyParser.json());
@@ -22,8 +24,8 @@ app.set('db','mongodb://admin:EIISDI2018$@tiendamusica-shard-00-00-0jvpg.mongodb
 
 
 //Rutas controladores por lógica
-require("./routes/rusuarios.js")(app, swig); // (app, param1, param2, etc.)
-require("./routes/rcanciones.js")(app, swig, mongo); // (app, param1, param2, etc.)
+require("./routes/rusuarios.js")(app, swig, gestorBD); // (app, param1, param2, etc.)
+require("./routes/rcanciones.js")(app, swig, gestorBD); // (app, param1, param2, etc.)
 
 
 // lanzar el servidor
