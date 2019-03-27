@@ -1,9 +1,28 @@
-module.exports = function (app, swig) {
+module.exports = function (app, swig, mongo) {
 
     app.post("/cancion", function (req, res) {
-        res.send("Canción agregada:" + req.body.nombre + "<br>"
-            + " Género :" + req.body.genero + "<br>"
-            + " Precio: " + req.body.precio);
+        var cancion = {
+            nombre : req.body.nombre,
+            genero : req.body.genero,
+            precio : req.body.precio
+        }
+        // Conectarse a la BBDD
+        mongo.MongoClient.connect(app.get('db'), function(err, db) {
+            if (err) {
+                res.send("Error de conexión: " + err);
+            } else {
+                var collection = db.collection('canciones');
+                collection.insert(cancion, function(err, result) {
+                    if (err) {
+                        res.send("Error al insertar " + err);
+                    } else {
+                        res.send("Agregada id: "+ result.ops[0]._id);
+                    }
+                    db.close();
+                });
+            }
+        });
+
     });
 
     app.get('/canciones/agregar', function (req, res) {
