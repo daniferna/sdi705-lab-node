@@ -13,6 +13,9 @@ var mongo = require('mongodb');
 var gestorBD = require("./modules/gestorBD.js");
 gestorBD.init(app,mongo);
 
+var fileUpload = require('express-fileupload');
+app.use(fileUpload());
+
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
