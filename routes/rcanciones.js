@@ -56,30 +56,41 @@ module.exports = function (app, swig, gestorBD) {
         });
     });
 
-    app.get("/publicaciones", function(req, res) {
-        var criterio = { autor : req.session.usuario };
-        gestorBD.obtenerCanciones(criterio, function(canciones) {
+    app.get("/publicaciones", function (req, res) {
+        var criterio = {autor: req.session.usuario};
+        gestorBD.obtenerCanciones(criterio, function (canciones) {
             if (canciones == null) {
                 res.send("Error al listar ");
             } else {
                 var respuesta = swig.renderFile('views/bpublicaciones.html',
                     {
-                        canciones : canciones
+                        canciones: canciones
                     });
                 res.send(respuesta);
             }
         });
     });
 
+    app.get('/cancion/eliminar/:id', function (req, res) {
+        var criterio = {"_id": gestorBD.mongo.ObjectID(req.params.id)};
+        gestorBD.eliminarCancion(criterio, function (canciones) {
+            if (canciones == null) {
+                res.send(respuesta);
+            } else {
+                res.redirect("/publicaciones");
+            }
+        });
+    });
+
     app.get('/cancion/modificar/:id', function (req, res) {
-        var criterio = { "_id" : gestorBD.mongo.ObjectID(req.params.id) };
-        gestorBD.obtenerCanciones(criterio,function(canciones){
-            if ( canciones == null ){
+        var criterio = {"_id": gestorBD.mongo.ObjectID(req.params.id)};
+        gestorBD.obtenerCanciones(criterio, function (canciones) {
+            if (canciones == null) {
                 res.send(respuesta);
             } else {
                 var respuesta = swig.renderFile('views/bcancionModificar.html',
                     {
-                        cancion : canciones[0]
+                        cancion: canciones[0]
                     });
                 res.send(respuesta);
             }
@@ -88,18 +99,18 @@ module.exports = function (app, swig, gestorBD) {
 
     app.post('/cancion/modificar/:id', function (req, res) {
         var id = req.params.id;
-        var criterio = { "_id" : gestorBD.mongo.ObjectID(id) };
+        var criterio = {"_id": gestorBD.mongo.ObjectID(id)};
         var cancion = {
-            nombre : req.body.nombre,
-            genero : req.body.genero,
-            precio : req.body.precio
+            nombre: req.body.nombre,
+            genero: req.body.genero,
+            precio: req.body.precio
         };
-        gestorBD.modificarCancion(criterio, cancion, function(result) {
+        gestorBD.modificarCancion(criterio, cancion, function (result) {
             if (result == null) {
                 res.send("Error al modificar ");
             } else {
                 paso1ModificarPortada(req.files, id, function (result) {
-                    if( result == null){
+                    if (result == null) {
                         res.send("Error en la modificación");
                     } else {
                         res.send("Modificado");
@@ -109,10 +120,10 @@ module.exports = function (app, swig, gestorBD) {
         });
     });
 
-    function paso1ModificarPortada(files, id, callback){
+    function paso1ModificarPortada(files, id, callback) {
         if (files.portada != null) {
-            var imagen =files.portada;
-            imagen.mv('public/portadas/' + id + '.png', function(err) {
+            var imagen = files.portada;
+            imagen.mv('public/portadas/' + id + '.png', function (err) {
                 if (err) {
                     callback(null); // ERROR
                 } else {
@@ -124,10 +135,10 @@ module.exports = function (app, swig, gestorBD) {
         }
     }
 
-    function paso2ModificarAudio(files, id, callback){
+    function paso2ModificarAudio(files, id, callback) {
         if (files.audio != null) {
             var audio = files.audio;
-            audio.mv('public/audios/'+id+'.mp3', function(err) {
+            audio.mv('public/audios/' + id + '.mp3', function (err) {
                 if (err) {
                     callback(null); // ERROR
                 } else {
