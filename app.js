@@ -7,6 +7,8 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
+var jwt = require('jsonwebtoken');
+app.set('jwt', jwt);
 var swig = require('swig');
 var mongo = require('mongodb');
 var fs = require('fs');
@@ -24,6 +26,43 @@ app.use(expressSession({
     saveUninitialized: true
 }));
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static('public'));
+
+// routerUsuarioToken
+var routerUsuarioToken = express.Router();
+routerUsuarioToken.use(function (req, res, next) {
+    // obtener el token, vía headers (opcionalmente GET y/o POST).
+    var token = req.headers['token'] || req.query.token || req.body.token;
+    if (token != null) {
+        // verificar el token
+        jwt.verify(token, 'secreto', function (err, infoToken) {
+            if (err || (Date.now() / 1000 - infoToken.tiempo) > 240) {
+                res.status(403); // Forbidden
+                res.json({
+                    acceso: false,
+                    error: 'Token invalido o caducado'
+                });
+                // También podríamos comprobar que intoToken.usuario existe
+                return;
+            } else {
+                // dejamos correr la petición
+                res.usuario = infoToken.usuario;
+                next();
+            }
+        });
+    } else {
+        res.status(403); // Forbidden
+        res.json({
+            acceso: false,
+            mensaje: 'No hay Token'
+        });
+    }
+});
+// Aplicar routerUsuarioToken
+app.use('/api/cancion', routerUsuarioToken);
+
 // routerUsuarioSession
 var routerUsuarioSession = express.Router();
 routerUsuarioSession.use(function (req, res, next) {
@@ -39,8 +78,8 @@ routerUsuarioSession.use(function (req, res, next) {
 //Aplicar routerUsuarioSession
 app.use("/canciones/agregar", routerUsuarioSession);
 app.use("/publicaciones", routerUsuarioSession);
-app.use("/cancion/comprar",routerUsuarioSession);
-app.use("/compras",routerUsuarioSession);
+app.use("/cancion/comprar", routerUsuarioSession);
+app.use("/compras", routerUsuarioSession);
 
 //routerAudios
 var routerAudios = express.Router();
@@ -54,11 +93,11 @@ routerAudios.use(function (req, res, next) {
                 next();
             } else {
                 var criterio = {
-                    usuario : req.session.usuario,
-                    cancionId : mongo.ObjectID(idCancion)
+                    usuario: req.session.usuario,
+                    cancionId: mongo.ObjectID(idCancion)
                 };
-                gestorBD.obtenerCompras(criterio ,function(compras){
-                    if (compras != null && compras.length > 0 ){
+                gestorBD.obtenerCompras(criterio, function (compras) {
+                    if (compras != null && compras.length > 0) {
                         next();
                         return;
                     } else {
@@ -80,23 +119,37 @@ routerUsuarioAutor.use(function (req, res, next) {
     var id = path.basename(req.originalUrl);
 // Cuidado porque req.params no funciona
 // en el router si los params van en la URL.
-    gestorBD.obtenerCanciones(
-        {_id: mongo.ObjectID(id)}, function (canciones) {
-            console.log(canciones[0]);
-            if (canciones[0].autor == req.session.usuario) {
-                next();
-            } else {
-                res.redirect("/tienda");
-            }
-        })
+    console.log(req.method);
+    if (req.method != 'DELETE' && req.method != 'PUT') {
+        gestorBD.obtenerCanciones(
+            {_id: mongo.ObjectID(id)}, function (canciones) {
+                console.log("NO API")
+                console.log(canciones[0]);
+                if (canciones[0].autor === req.session.usuario) {
+                    next();
+                } else {
+                    res.redirect("/tienda");
+                }
+            });
+    } else {
+        gestorBD.obtenerCanciones(
+            {_id: mongo.ObjectID(id)}, function (canciones) {
+                console.log("API");
+                console.log(canciones[0]);
+                if (canciones[0].autor === res.usuario) {
+                    next();
+                } else {
+                    res.status(403);
+                    res.json({error: "Usuario no propietario de la cancion"});
+                }
+            });
+    }
+
 });
 //Aplicar routerUsuarioAutor
 app.use("/cancion/modificar", routerUsuarioAutor);
 app.use("/cancion/eliminar", routerUsuarioAutor);
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(express.static('public'));
+app.use("/api/cancion/*", routerUsuarioAutor);
 
 // Variables
 app.set('port', 8081);
@@ -113,9 +166,9 @@ app.get('/', function (req, res) {
     res.redirect('/tienda');
 });
 
-app.use( function (err, req, res, next ) {
+app.use(function (err, req, res, next) {
     console.log("Error producido: " + err); //we log the error in our db
-    if (! res.headersSent) {
+    if (!res.headersSent) {
         res.status(400);
         res.send("Recurso no disponible");
     }
@@ -125,6 +178,6 @@ app.use( function (err, req, res, next ) {
 https.createServer({
     key: fs.readFileSync('certificates/alice.key'),
     cert: fs.readFileSync('certificates/alice.crt')
-}, app).listen(app.get('port'), function() {
+}, app).listen(app.get('port'), function () {
     console.log("Servidor activo");
 });
