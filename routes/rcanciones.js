@@ -7,7 +7,7 @@ module.exports = function (app, swig, gestorBD) {
             genero: req.body.genero,
             precio: req.body.precio,
             autor: req.session.usuario
-        }
+        };
         // Conectarse a la BBDD
         gestorBD.insertarCancion(cancion, function (id) {
             if (id == null) {
@@ -63,7 +63,7 @@ module.exports = function (app, swig, gestorBD) {
                 for (i = 0; i < compras.length; i++) {
                     cancionesCompradasIds.push(compras[i].cancionId);
                 }
-                var criterio = {"_id": {$in: cancionesCompradasIds}}
+                var criterio = {"_id": {$in: cancionesCompradasIds}};
                 gestorBD.obtenerCanciones(criterio, function (canciones) {
                     var respuesta = swig.renderFile('views/bcompras.html',
                         {
@@ -78,7 +78,7 @@ module.exports = function (app, swig, gestorBD) {
     app.get("/tienda", function (req, res) {
         var criterio = {};
         if (req.query.busqueda != null) {
-            criterio = {"nombre": {$regex: ".*" + req.query.busqueda + ".*"}};
+            criterio = {"nombre": {$regex: ".*" + req.query.busqueda + ".*", $options:'i'}};
         }
         var pg = parseInt(req.query.pg); // Es String !!!
         if (req.query.pg == null) { // Puede no venir el param

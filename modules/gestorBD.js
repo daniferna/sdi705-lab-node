@@ -152,6 +152,7 @@ module.exports = {
                                 funcionCallback(null);
                             } else {
                                 funcionCallback(canciones, count);
+                                console.log("Canciones: " + canciones + "\nNumero canciones: " + count);
                             }
                             db.close();
                         });
