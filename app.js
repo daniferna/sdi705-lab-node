@@ -14,6 +14,8 @@ app.use(function(req, res, next) {
     next();
 });
 
+var rest = require('request');
+app.set('rest',rest);
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
 var jwt = require('jsonwebtoken');

@@ -78,7 +78,7 @@ module.exports = function (app, swig, gestorBD) {
     app.get("/tienda", function (req, res) {
         var criterio = {};
         if (req.query.busqueda != null) {
-            criterio = {"nombre": {$regex: ".*" + req.query.busqueda + ".*", $options:'i'}};
+            criterio = {"nombre": {$regex: ".*" + req.query.busqueda + ".*", $options: 'i'}};
         }
         var pg = parseInt(req.query.pg); // Es String !!!
         if (req.query.pg == null) { // Puede no venir el param
@@ -210,11 +210,26 @@ module.exports = function (app, swig, gestorBD) {
             if (canciones == null) {
                 res.send(respuesta);
             } else {
-                var respuesta = swig.renderFile('views/bcancion.html',
-                    {
-                        cancion: canciones[0]
-                    });
-                res.send(respuesta);
+                var configuracion = {
+                    url: "https://api.exchangeratesapi.io/latest?base=EUR",
+                    method: "get",
+                    headers: {
+                        "token": "ejemplo",
+                    }
+                };
+                var rest = app.get("rest");
+                rest(configuracion, function (error, response, body) {
+                    console.log("cod: " + response.statusCode + " Cuerpo :" + body);
+                    var objetoRespuesta = JSON.parse(body);
+                    var cambioUSD = objetoRespuesta.rates.USD;
+                    // nuevo campo "usd"
+                    canciones[0].usd = cambioUSD * canciones[0].precio;
+                    var respuesta = swig.renderFile('views/bcancion.html',
+                        {
+                            cancion: canciones[0]
+                        });
+                    res.send(respuesta);
+                });
             }
         });
     });
