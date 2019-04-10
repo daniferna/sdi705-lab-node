@@ -5,6 +5,15 @@
 // Módulos
 var express = require('express');
 var app = express();
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "POST, GET, DELETE, UPDATE, PUT");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, token");
+    // Debemos especificar todas las headers que se aceptan. Content-Type , token
+    next();
+});
+
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
 var jwt = require('jsonwebtoken');
@@ -120,7 +129,9 @@ routerUsuarioAutor.use(function (req, res, next) {
 // Cuidado porque req.params no funciona
 // en el router si los params van en la URL.
     console.log(req.method);
-    if (req.method != 'DELETE' && req.method != 'PUT') {
+    if (req.originalUrl.includes("api") && req.method == 'GET')
+        next();
+    else if (req.method != 'DELETE' && req.method != 'PUT') {
         gestorBD.obtenerCanciones(
             {_id: mongo.ObjectID(id)}, function (canciones) {
                 console.log("NO API")
